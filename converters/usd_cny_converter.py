@@ -1,12 +1,27 @@
-import requests, json, time, os
-from converters import CurrencyConverter
+import json
+import time
+import os
+from converters.usd_converter import UsdConverter # Import UsdConverter
+from converters.rate_fetcher import RateFetcher
 
-class UsdCnyConverter(CurrencyConverter):
-    def __init__(self, api_url="https://api.exchangerate-api.com/v4/latest/USD", cache_file="exchange_rates.json", cache_expiry=3600):
-        self.api_url = api_url
+
+class UsdCnyConverter(UsdConverter):
+    def __init__(self, rate_fetcher=None, cache_file="exchange_rates.json", cache_expiry=3600):
+        super().__init__(rate_fetcher or RateFetcher())
         self.cache_file = cache_file
         self.cache_expiry = cache_expiry
-        self.rates = self.get_rates()
+
+    def get_exchange_rate(self):
+        rates = self._load_from_cache()
+        if rates:
+            return rates.get('CNY')
+
+        rates_data = self.rate_fetcher.fetch_rates()
+        if rates_data and 'rates' in rates_data:
+            rates = rates_data['rates']
+            self._save_to_cache(rates)
+            return rates.get('CNY')
+        return None
 
     def _load_from_cache(self):
         if os.path.exists(self.cache_file):
@@ -28,34 +43,15 @@ class UsdCnyConverter(CurrencyConverter):
         except IOError as e:
             print(f"Error saving to cache: {e}")
 
-    def get_rates(self):
-        rates = self._load_from_cache()
-        if rates:
-            return rates
-
-        try:
-            response = requests.get(self.api_url, timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            rates = data['rates']
-            self._save_to_cache(rates)
-            return rates
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching rates from API: {e}")
-            return None
-        except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error processing JSON response: {e}")
-            return None
-    
-    def convert_usd_to_eur(self, amount):
-        print('This is not USD to EUR converter')
-
-    def convert_usd_to_gbp(self, amount):
-        print('This is not USD to GBP converter')
-
-    def convert_usd_to_rub(self, amount):
-        print('This is not USD to RUB converter')
-
     def convert_usd_to_cny(self, amount):
-        return amount * self.rates['CNY']
+        rate = self.get_exchange_rate()
+        if rate is not None:
+            return amount * rate
+        return None
+
+    def convert_usd(self, amount, to_currency):
+        if to_currency == 'CNY':
+            return self.convert_usd_to_cny(amount)
+        else:
+            print(f"UsdCnyConverter не поддерживает конвертацию в {to_currency}")
+            return None

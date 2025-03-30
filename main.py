@@ -1,20 +1,30 @@
-import asyncio
 from converters import *
 
-def main():    
-    amount = int(input('Введите значение в USD: \n'))
-    
-    converter = UsdRubConverter()
-    print(f"{amount} USD to RUB: {converter.convert_usd_to_rub(amount)}")
-    
-    converter = UsdEurConverter()
-    print(f"{amount} USD to EUR: {converter.convert_usd_to_eur(amount)}")
-    
-    converter = UsdGbpConverter()
-    print(f"{amount} USD to GBP: {converter.convert_usd_to_gbp(amount)}")
-    
-    converter = UsdCnyConverter()
-    print(f"{amount} USD to CNY: {converter.convert_usd_to_cny(amount)}")
+def main():
+    try:
+        amount_str = input('Введите значение в USD: \n')
+        amount = int(amount_str)
+        if amount < 0:
+            print("Значение USD не может быть отрицательным.")
+            return
+    except ValueError:
+        print("Пожалуйста, введите целое число.")
+        return
+
+    converters = {
+        "RUB": UsdRubConverter(),
+        "EUR": UsdEurConverter(),
+        "GBP": UsdGbpConverter(),
+        "CNY": UsdCnyConverter(),
+    }
+
+    for currency, converter in converters.items():
+        converted_amount = converter.convert_usd(amount, currency)
+        if converted_amount is not None:
+            print(f"{amount} USD to {currency}: {converted_amount}")
+        else:
+            print(f"Не удалось конвертировать {amount} USD в {currency}.")
+
 
 if __name__ == "__main__":
     main()

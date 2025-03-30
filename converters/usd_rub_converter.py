@@ -1,23 +1,26 @@
-import requests
-from converters import CurrencyConverter
+from converters.usd_converter import UsdConverter
+from converters.rate_fetcher import RateFetcher
 
-class UsdRubConverter(CurrencyConverter):
-    def __init__(self):
-        self.rates = self.get_rates()
 
-    def get_rates(self):
-        response = requests.get("https://api.exchangerate-api.com/v4/latest/USD")
-        data = response.json()
-        return data['rates']
-    
-    def convert_usd_to_eur(self, amount):
-        print('This is not USD to EUR converter')
+class UsdRubConverter(UsdConverter):
+    def __init__(self, rate_fetcher=None):
+        super().__init__(rate_fetcher or RateFetcher())
+        self.rates = self.get_exchange_rate()
 
-    def convert_usd_to_gbp(self, amount):
-        print('This is not USD to GBP converter')
+
+    def get_exchange_rate(self):
+        rates_data = self.rate_fetcher.fetch_rates()
+        if rates_data and 'rates' in rates_data:
+            return rates_data['rates'].get('RUB')
+        return None
 
     def convert_usd_to_rub(self, amount):
-        return amount * self.rates['RUB']
+        if self.rates is not None:
+            return amount * self.rates
+        return None
 
-    def convert_usd_to_cny(self, amount):
-        print('This is not USD to CNY converter')
+    def convert_usd(self, amount, to_currency):
+        if to_currency == 'RUB':
+            return self.convert_usd_to_rub(amount)
+        else:
+            print(f"UsdRubConverter не поддерживает конвертацию в {to_currency}")

@@ -1,12 +1,14 @@
-import requests, json, logging, time
-from converters import CurrencyConverter
+import logging
+from converters.usd_converter import UsdConverter
+from converters.rate_fetcher import RateFetcher
 
-class UsdGbpConverter(CurrencyConverter):
-    def __init__(self, max_retries=3, retry_delay=2):
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
+
+class UsdGbpConverter(UsdConverter):
+    def __init__(self, rate_fetcher=None):
+        super().__init__(rate_fetcher or RateFetcher())
         self.logger = self._setup_logger()
-        self.rates = self.get_rates()
+        self.rates = self.get_exchange_rate()
+
 
     def _setup_logger(self):
         logger = logging.getLogger(__name__)
@@ -17,35 +19,21 @@ class UsdGbpConverter(CurrencyConverter):
         logger.addHandler(ch)
         return logger
 
-    def get_rates(self):
-        for attempt in range(self.max_retries):
-            try:
-                response = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=10)  # Добавляем тайм-аут
-                response.raise_for_status()
-                data = response.json()
-                rates = data['rates']
-                return rates
+    def get_exchange_rate(self):
+        rates_data = self.rate_fetcher.fetch_rates()
+        if rates_data and 'rates' in rates_data:
+            return rates_data['rates'].get('GBP')
+        return None
 
-            except requests.exceptions.RequestException as e:
-                self.logger.error(f"Request failed (attempt {attempt + 1}/{self.max_retries}): {e}")
-                if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay)
-                else:
-                    self.logger.error("Max retries reached.  Unable to fetch rates.")
-                    return None
 
-            except (json.JSONDecodeError, KeyError) as e:
-                self.logger.error(f"Error processing JSON response: {e}")
-                return None
+    def convert_usd_to_gbp(self, amount): #
+        if self.rates is not None:
+            return amount * self.rates
+        return None
 
-    def convert_usd_to_eur(self, amount):
-        print('This is not USD to EUR converter')
-
-    def convert_usd_to_gbp(self, amount):
-        return amount * self.rates['GBP']
-
-    def convert_usd_to_rub(self, amount):
-        print('This is not USD to RUB converter')
-
-    def convert_usd_to_cny(self, amount):
-        print('This is not USD to CNY converter')
+    def convert_usd(self, amount, to_currency):
+        if to_currency == 'GBP':
+            return self.convert_usd_to_gbp(amount)
+        else:
+            print(f"UsdGbpConverter не поддерживает конвертацию в {to_currency}")
+            return None
