@@ -1,6 +1,12 @@
 from converters import *
 
-def main():
+def main() -> None:
+    """
+    Основная функция для запуска конвертера валют.
+
+    Запрашивает у пользователя сумму в USD, конвертирует ее в RUB, EUR, GBP, CNY
+    и выводит результаты на экран.
+    """
     try:
         amount_str = input('Введите значение в USD: \n')
         amount = int(amount_str)
@@ -8,7 +14,7 @@ def main():
             print("Значение USD не может быть отрицательным.")
             return
     except ValueError:
-        print("Пожалуйста, введите целое число.")
+        print("Некорректный ввод. Пожалуйста, введите целое число, представляющее сумму в USD.") # Более понятное сообщение
         return
 
     converters = {

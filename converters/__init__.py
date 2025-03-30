@@ -1,3 +1,7 @@
+"""
+Инициализационный файл пакета converters.
+Экспортирует классы для конвертации валют.
+"""
 from .currency_converter import CurrencyConverter
 from .usd_converter import UsdConverter
 from .usd_cny_converter import UsdCnyConverter
